@@ -2,6 +2,10 @@
 
 Bản triển khai độc lập của Pixel Foundry dành cho GitHub Pages. Website chạy hoàn toàn trong trình duyệt và không phụ thuộc vào `chatgpt.site`.
 
+## Truy cập
+
+https://duchaiten.github.io/pixel-foundry-web/
+
 ## Chạy cục bộ
 
 ```bash
