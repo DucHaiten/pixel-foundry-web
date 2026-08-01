@@ -2,43 +2,75 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080a0c">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#050608">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Lưu X">
-<meta name="description" content="Tải video từ X trên iPhone bằng PWA và Phím tắt.">
+<meta name="apple-mobile-web-app-title" content="Lướt X">
+<meta name="description" content="Lướt video công khai từ X theo dạng vuốt dọc, đề xuất cục bộ và lưu xem offline.">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="apple-touch-icon" href="./assets/icon-180.png">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<title>Lưu X</title>
 <link rel="stylesheet" href="./styles.css">
+<title>Lướt X</title>
 </head>
 <body>
-<div class="app">
-<header class="top"><div class="logo">X↓</div><div class="brand"><strong>Lưu X</strong><span id="runtime">Ứng dụng web cho iPhone</span></div><button class="iconbtn" id="help">?</button></header>
-<main>
-<section class="screen active" data-screen="download">
-<div class="hero"><div class="eyebrow">TẢI NHANH</div><h1>Lưu video đang xem trên X</h1><p>Dán liên kết hoặc gửi thẳng từ bảng Chia sẻ của X qua Phím tắt.</p></div>
-<div class="card dest" id="destCard"><div class="desticon" id="destIcon">✿</div><div class="destcopy"><small>Nơi lưu Phím tắt đang chọn</small><strong id="destLabel">Ảnh &gt; Lưu X</strong></div><button class="linkbtn" type="button">Đổi</button></div>
-<form class="card field" id="form"><label for="url">Liên kết bài đăng X</label><div class="urlwrap"><textarea id="url" placeholder="https://x.com/.../status/..." autocapitalize="off" autocomplete="off" spellcheck="false"></textarea><button class="paste" id="paste" type="button">Dán</button></div><button class="primary" id="resolve" type="submit">Tìm video</button><div class="msg" id="msg"></div></form>
-<article class="card media" id="media"><div class="poster"><img id="poster" alt="Ảnh xem trước"><span id="count">1 video</span></div><div class="mediabody"><div class="author"><div class="avatar" id="avatar"></div><div><strong id="name">Tài khoản X</strong><span id="handle"></span></div></div><p class="post" id="text"></p><div class="row"><label for="quality">Chất lượng</label><select id="quality"></select></div><button class="primary" id="save" type="button">Mở bảng lưu của iPhone</button><p class="note">Khi dùng trực tiếp trong app, iPhone sẽ mở bảng Chia sẻ để bạn chọn Lưu video hoặc Lưu vào Tệp.</p></div></article>
-<div class="card callout"><div class="big">⌁</div><div><strong>Bỏ bước sao chép liên kết</strong><p>Tạo Phím tắt một lần rồi dùng ngay trong X.</p></div><button class="tinybtn" id="setupNow">Thiết lập</button></div>
+<div id="app">
+<section id="onboarding" class="onboarding" hidden>
+  <div class="onboard-card safe-top safe-bottom">
+    <div class="brand-mark"><b>X</b><i>▶</i></div>
+    <div class="eyebrow">VIDEO X KHÔNG QUẢNG CÁO</div>
+    <h1>Lướt, thích và lưu để xem offline</h1>
+    <p class="lead">Nhập tài khoản X để app đọc danh sách công khai bạn đang theo dõi. Không cần mật khẩu. Đề xuất tiếp tục học từ thời gian xem, lượt thích và video đã lưu ngay trên máy.</p>
+    <label for="handle">Tài khoản X của bạn</label>
+    <div class="handle"><span>@</span><input id="handle" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="tên_tài_khoản"></div>
+    <small class="hint">Có thể bỏ trống và dùng chủ đề đã chọn.</small>
+    <div class="picker-head"><div><label>Chủ đề khởi đầu</label><small>Chọn ít nhất 3 chủ đề.</small></div><b id="pickedCount">0</b></div>
+    <div id="onboardTopics" class="topics"></div>
+    <button id="start" class="primary" type="button">Bắt đầu lướt <span>→</span></button>
+    <button class="link" data-install type="button">Hướng dẫn thêm vào Màn hình chính</button>
+  </div>
 </section>
-<section class="screen" data-screen="setup">
-<div class="hero"><div class="eyebrow">LẦN ĐẦU</div><h1>Thiết lập trên iPhone</h1><p>Làm hai phần dưới đây một lần. Hướng dẫn luôn nằm trong app.</p></div>
-<div class="statusgrid"><div class="status" id="pwaStatus"><small>Màn hình chính</small><strong id="pwaText">Chưa xác nhận</strong></div><div class="status" id="shortcutStatus"><small>Phím tắt</small><strong id="shortcutText">Chưa xác nhận</strong></div></div>
-<article class="card guide"><button class="guidehead" data-guide="pwa"><span class="num">1</span><span><strong>Thêm app vào Màn hình chính</strong><small>Safari, khoảng 20 giây</small></span><span>⌄</span></button><div class="guidebody open" data-body="pwa"><ol class="steps"><li><span>1</span><div><strong>Mở trang này bằng Safari</strong><p>Không mở trong trình duyệt thu nhỏ bên trong ứng dụng khác.</p></div></li><li><span>2</span><div><strong>Chạm nút Chia sẻ của Safari</strong><p>Nút hình vuông có mũi tên hướng lên.</p></div></li><li><span>3</span><div><strong>Chọn Thêm vào Màn hình chính</strong><p>Bật Mở dưới dạng ứng dụng rồi chạm Thêm.</p></div></li></ol><button class="secondary" id="pwaDone">Tôi đã thêm xong</button></div></article>
-<article class="card guide"><button class="guidehead" data-guide="shortcut"><span class="num">2</span><span><strong>Tạo Phím tắt Lưu X</strong><small>Dùng ngay trong bảng Chia sẻ của X</small></span><span>⌄</span></button><div class="guidebody" data-body="shortcut"><div class="switch"><button class="active" data-mode="bridge">Mở app tự động</button><button data-mode="direct">Lưu thẳng</button></div><div class="mode active" data-panel="bridge"><ol class="steps"><li><span>1</span><div><strong>Mở Phím tắt, tạo phím tắt mới</strong><p>Đặt tên Lưu X.</p></div></li><li><span>2</span><div><strong>Mở phần Chi tiết</strong><p>Bật Hiển thị trong Bảng chia sẻ. Chỉ nhận URL.</p></div></li><li><span>3</span><div><strong>Thêm tác vụ Mã hóa URL</strong><p>Đầu vào là Đầu vào Phím tắt.</p></div></li><li><span>4</span><div><strong>Thêm tác vụ Văn bản</strong><p>Dán địa chỉ bên dưới, rồi chèn biến đã mã hóa ngay cuối dòng.</p></div></li><li><span>5</span><div><strong>Thêm tác vụ Mở URL</strong><p>Dùng khối Văn bản làm đầu vào rồi chạm Xong.</p></div></li></ol><div class="copybox"><span id="shortcutUrl"></span><button id="copyUrl">Sao chép địa chỉ</button></div></div><div class="mode" data-panel="direct"><ol class="steps"><li><span>1</span><div><strong>Tạo Phím tắt nhận URL từ Bảng chia sẻ</strong><p>Đặt tên Lưu X.</p></div></li><li><span>2</span><div><strong>Thay x.com thành d.fxtwitter.com</strong><p>Thêm tác vụ Thay thế văn bản.</p></div></li><li><span>3</span><div><strong>Thay twitter.com thành d.fxtwitter.com</strong><p>Thêm tác vụ Thay thế văn bản lần hai.</p></div></li><li><span>4</span><div><strong>Thêm Lấy nội dung của URL</strong><p>Đầu vào là kết quả thay thế.</p></div></li><li><span>5</span><div><strong>Thêm Chọn từ menu</strong><p>Tạo hai mục: Ảnh và Tệp.</p></div></li><li><span>6</span><div><strong>Trong nhánh Ảnh</strong><p>Thêm Lưu vào Album ảnh và chọn album. Lần sau Phím tắt giữ nguyên album này.</p></div></li><li><span>7</span><div><strong>Trong nhánh Tệp</strong><p>Thêm Lưu tệp, tắt Hỏi nơi lưu và chọn thư mục. Lần sau giữ nguyên thư mục này.</p></div></li></ol></div><button class="secondary" id="shortcutDone">Tôi đã tạo xong</button></div></article>
-<article class="card guide"><button class="guidehead" data-guide="use"><span class="num">3</span><span><strong>Cách dùng hằng ngày</strong><small>Không cần sao chép và dán</small></span><span>⌄</span></button><div class="guidebody" data-body="use"><ol class="steps"><li><span>1</span><div><strong>Mở bài đăng video trong X</strong><p>Chạm biểu tượng Chia sẻ.</p></div></li><li><span>2</span><div><strong>Chọn Lưu X</strong><p>Phím tắt nhận đúng liên kết đang xem.</p></div></li><li><span>3</span><div><strong>Lưu video</strong><p>Bản mở app sẽ tự tìm video. Bản lưu thẳng sẽ dùng album hoặc thư mục đã đặt.</p></div></li></ol></div></article>
+
+<section id="feedView" class="view active" data-view="feed">
+  <header class="feed-head safe-top">
+    <button id="profileOpen" class="circle avatar" type="button">@</button>
+    <div class="feed-tabs"><button id="forYou" class="active" type="button">Dành cho bạn</button><button id="following" type="button">Đang theo dõi</button></div>
+    <button id="refresh" class="circle" type="button">↻</button>
+  </header>
+  <main id="feed" class="feed"></main>
+  <div id="loading" class="loading"><span></span><p>Đang tạo luồng đề xuất...</p></div>
+  <div id="empty" class="empty" hidden><b>◌</b><h2>Chưa lấy được video</h2><p>Kiểm tra kết nối, đổi chủ đề hoặc nhập tài khoản X khác.</p><button id="retry" class="primary compact">Thử lại</button></div>
 </section>
-<section class="screen" data-screen="settings"><div class="hero"><div class="eyebrow">CÀI ĐẶT</div><h1>Nơi lưu mặc định</h1><p>Thông tin này giúp bạn nhìn rõ cấu hình đang dùng trong Phím tắt.</p></div><div class="seg"><button class="active" data-dest="photos">✿<br><strong>Ảnh</strong></button><button data-dest="files">▰<br><strong>Tệp</strong></button></div><div class="card setting"><label for="album">Tên album Ảnh</label><input id="album" value="Lưu X"><p class="note">Chọn cùng album trong tác vụ Lưu vào Album ảnh.</p></div><div class="card setting"><label for="folder">Thư mục Tệp</label><input id="folder" value="iCloud Drive/Shortcuts/Lưu X"><p class="note">Chọn cùng thư mục trong tác vụ Lưu tệp.</p></div><div class="card setting"><label for="defaultQuality">Chất lượng mặc định</label><select id="defaultQuality"><option value="best">Cao nhất</option><option value="balanced">Cân bằng</option><option value="small">Nhẹ nhất</option></select></div><button class="primary" id="saveSettings">Ghi nhớ cài đặt</button><div class="msg" id="settingsMsg"></div></section>
-</main>
+
+<section id="savedView" class="view page" data-view="saved" hidden>
+  <header class="page-head safe-top"><div><div class="eyebrow">TRÊN MÁY NÀY</div><h1>Đã lưu offline</h1></div><button id="storageOpen" class="circle">i</button></header>
+  <p id="savedSummary" class="summary"></p>
+  <main id="savedGrid" class="saved-grid"></main>
+  <div id="savedEmpty" class="empty page-empty" hidden><b>↓</b><h2>Chưa có video offline</h2><p>Chạm nút lưu ở cạnh video để giữ video trong app.</p><button class="primary compact" data-feed>Đi tới luồng</button></div>
+</section>
+
+<section id="settingsView" class="view page" data-view="settings" hidden>
+  <header class="page-head safe-top"><div><div class="eyebrow">CÁ NHÂN HÓA</div><h1>Hồ sơ và cài đặt</h1></div><button id="settingsClose" class="circle">×</button></header>
+  <main class="settings safe-bottom">
+    <article class="card profile"><div id="profileAvatar" class="profile-avatar">@</div><div><small>Nguồn tài khoản</small><strong id="profileName">Chưa kết nối</strong><p id="profileNote">Luồng đang dùng chủ đề và xu hướng công khai.</p></div><button id="profileChange">Đổi</button></article>
+    <article class="card"><h2>Chủ đề đề xuất</h2><p>App kết hợp các chủ đề này với hành vi xem trên máy.</p><div id="settingsTopics" class="topics small"></div><button id="topicsSave" class="secondary">Lưu chủ đề</button></article>
+    <article class="card"><h2>Phát video</h2><label class="row"><span><strong>Chất lượng</strong><small>Chọn luồng MP4 phù hợp.</small></span><select id="quality"><option value="high">Cao</option><option value="balanced">Cân bằng</option><option value="data">Tiết kiệm</option></select></label><label class="row switch"><span><strong>Phát có tiếng</strong><small>Chạm video lần đầu để iPhone cho phép âm thanh.</small></span><input id="sound" type="checkbox"><i></i></label><label class="row switch"><span><strong>Ẩn nội dung nhạy cảm</strong><small>Bỏ qua bài được nguồn đánh dấu nhạy cảm.</small></span><input id="safe" type="checkbox"><i></i></label></article>
+    <article class="card"><div class="storage-line"><div><h2>Dung lượng offline</h2><p id="storageText">Đang đo...</p></div><b id="storageValue">0 MB</b></div><div class="meter"><span id="storageBar"></span></div><button id="persist" class="secondary">Giữ dữ liệu bền hơn trên iPhone</button></article>
+    <article class="card"><h2>Cài app trên iPhone</h2><p id="installState">Mở bằng Safari, chạm Chia sẻ rồi chọn Thêm vào Màn hình chính.</p><button class="secondary" data-install>Xem hướng dẫn</button></article>
+    <article class="card danger"><button id="reset">Đặt lại đề xuất đã học</button><button id="clearSaved">Xóa toàn bộ video offline</button></article>
+    <p class="legal">Ứng dụng đọc dữ liệu công khai qua FxTwitter và không liên kết chính thức với X. Mật khẩu X không được yêu cầu hoặc lưu trong app.</p>
+  </main>
+</section>
+
+<nav id="nav" class="nav safe-bottom"><button class="active" data-nav="feed"><b>▶</b><small>Đề xuất</small></button><button data-nav="saved"><b>↓</b><small>Offline</small><i id="badge" hidden>0</i></button><button data-nav="settings"><b>⚙</b><small>Cài đặt</small></button></nav>
+<div id="toast" class="toast"></div>
+
+<div id="downloadSheet" class="backdrop" hidden><div class="sheet safe-bottom"><div class="grab"></div><h2>Đang lưu offline</h2><p id="downloadText">Đang chuẩn bị video...</p><div class="meter download"><span id="downloadBar"></span></div><button id="downloadCancel" class="link">Hủy</button></div></div>
+<div id="moreSheet" class="backdrop" hidden><div class="sheet safe-bottom"><div class="grab"></div><button id="notInterested" class="sheet-action"><b>⊘</b><span><strong>Không quan tâm</strong><small>Giảm nội dung tương tự.</small></span></button><button id="original" class="sheet-action"><b>↗</b><span><strong>Mở bài gốc trên X</strong><small>Xem bình luận và thông tin đầy đủ.</small></span></button><button id="copy" class="sheet-action"><b>⌁</b><span><strong>Sao chép liên kết</strong><small>Sao chép địa chỉ bài đăng.</small></span></button><button id="moreClose" class="secondary">Đóng</button></div></div>
+<div id="installSheet" class="backdrop" hidden><div class="sheet install safe-bottom"><div class="grab"></div><div class="install-icon">X▶</div><h2>Thêm Lướt X vào Màn hình chính</h2><ol><li><b>1</b><p>Mở trang này bằng <strong>Safari</strong>.</p></li><li><b>2</b><p>Chạm nút <strong>Chia sẻ</strong> hình vuông có mũi tên hướng lên.</p></li><li><b>3</b><p>Chọn <strong>Thêm vào Màn hình chính</strong>, bật mở dưới dạng ứng dụng rồi chạm Thêm.</p></li></ol><button id="installClose" class="primary compact">Đã hiểu</button></div></div>
 </div>
-<nav class="bottom"><button class="nav active" data-target="download"><span>↓</span><small>Tải</small></button><button class="nav" data-target="setup"><span>⌁</span><small>Thiết lập</small></button><button class="nav" data-target="settings"><span>⚙</span><small>Cài đặt</small></button></nav>
-<div class="modal" id="modal"><div class="sheet"><div class="art">X↓</div><h2>Thiết lập một lần, dùng ngay trong X</h2><p>Thêm app vào Màn hình chính, sau đó tạo Phím tắt theo hướng dẫn trong app. Không cần Mac, Xcode hay tài khoản Developer.</p><div class="sheetactions"><button class="secondary" id="closeIntro">Để sau</button><button class="primary" id="openGuide">Mở hướng dẫn</button></div></div></div>
-<div class="toast" id="toast"></div>
-<script src="./app.js" defer></script>
+<script type="module" src="./app.js"></script>
 </body>
 </html>
