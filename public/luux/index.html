@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090b">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Lưu video từ X trên iPhone bằng PWA và Phím tắt.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Lưu X">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <title>Lưu X</title>
+  <style>
+    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;background:#08090b;color:#f6f7f8}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 20%,#163126 0,#08090b 42%)}.loader{width:min(100%,360px);text-align:center}.mark{width:84px;height:84px;margin:auto;border-radius:24px;display:grid;place-items:center;background:#11151a;border:1px solid #28342e;font-size:30px;font-weight:800}.ring{width:30px;height:30px;margin:26px auto 16px;border:3px solid #25302b;border-top-color:#39d98a;border-radius:50%;animation:spin .8s linear infinite}h1{font-size:24px;margin:0 0 8px}p{margin:0;color:#9da7a1;line-height:1.5;font-size:15px}.error{display:none;padding:18px;border:1px solid #5d3339;border-radius:16px;background:#271418;color:#ffd5da}.error strong{display:block;margin-bottom:8px;color:#fff}@keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <main class="loader" id="loader">
+    <div class="mark">X↓</div>
+    <div class="ring"></div>
+    <h1>Đang mở Lưu X</h1>
+    <p>Đang chuẩn bị giao diện trên iPhone.</p>
+  </main>
+  <div class="error" id="error"><strong>Không tải được ứng dụng</strong><span>Kiểm tra kết nối mạng rồi mở lại trang.</span></div>
+  <script>
+    (() => {
+      'use strict';
+      const PARTS = [0,1,2,3].map((n) => `https://raw.githubusercontent.com/DucHaiten/pixel-foundry-web/main/.luux/part-0${n}`);
+      const decoder = new TextDecoder();
+
+      function decodeBase64(value) {
+        const binary = atob(value.replace(/\s+/g, ''));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+      }
+
+      function readText(bytes, start, length) {
+        return decoder.decode(bytes.subarray(start, start + length)).replace(/\0.*$/s, '').trim();
+      }
+
+      function parseTar(bytes) {
+        const files = new Map();
+        let offset = 0;
+        while (offset + 512 <= bytes.length) {
+          const name = readText(bytes, offset, 100);
+          if (!name) break;
+          const sizeText = readText(bytes, offset + 124, 12).replace(/\0/g, '').trim();
+          const size = parseInt(sizeText || '0', 8) || 0;
+          const type = String.fromCharCode(bytes[offset + 156] || 48);
+          const start = offset + 512;
+          if (type !== '5') files.set(name.replace(/^\.\//, ''), bytes.slice(start, start + size));
+          offset = start + Math.ceil(size / 512) * 512;
+        }
+        return files;
+      }
+
+      async function unpack() {
+        const pieces = await Promise.all(PARTS.map(async (url) => {
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        }));
+        const compressed = decodeBase64(pieces.join(''));
+        const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
+        const archive = new Uint8Array(await new Response(stream).arrayBuffer());
+        const files = parseTar(archive);
+        const html = decoder.decode(files.get('index.html') || new Uint8Array());
+        const css = decoder.decode(files.get('styles.css') || new Uint8Array());
+        const js = decoder.decode(files.get('app.js') || new Uint8Array());
+        if (!html || !css || !js) throw new Error('Gói ứng dụng thiếu tệp');
+        return html
+          .replace('<link rel="stylesheet" href="./styles.css">', `<style>${css}</style>`)
+          .replace('<link rel="apple-touch-icon" href="./assets/icon-180.png">', '<link rel="apple-touch-icon" href="./icon.svg">')
+          .replace('<link rel="icon" type="image/png" href="./assets/icon-192.png">', '<link rel="icon" type="image/svg+xml" href="./icon.svg">')
+          .replace('<script src="./app.js" defer></script>', `<script>${js.replace(/<\\/script/gi, '<\\/script')}<\\/script>`);
+      }
+
+      async function start() {
+        try {
+          const html = await unpack();
+          document.open();
+          document.write(html);
+          document.close();
+        } catch (error) {
+          console.error(error);
+          document.getElementById('loader').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+        }
+      }
+
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+      start();
+    })();
+  </script>
+</body>
+</html>
