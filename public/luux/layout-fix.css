@@ -1,0 +1,26 @@
+@supports (height: 100svh) {
+  .video-card {
+    height: 100svh;
+    min-height: 100svh;
+  }
+}
+.video-card .meta,
+.video-card .rail {
+  bottom: max(calc(76px + env(safe-area-inset-bottom)), 84px);
+}
+.video-card .mute {
+  top: calc(60px + env(safe-area-inset-top));
+}
+@media (max-height: 740px) {
+  .video-card .meta,
+  .video-card .rail {
+    bottom: max(calc(66px + env(safe-area-inset-bottom)), 74px);
+  }
+  .video-card .rail {
+    gap: 9px;
+  }
+  .video-card .action b {
+    width: 43px;
+    height: 43px;
+  }
+}
