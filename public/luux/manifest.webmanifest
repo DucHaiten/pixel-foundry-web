@@ -1,0 +1,20 @@
+{
+  "name": "Lưu X",
+  "short_name": "Lưu X",
+  "description": "Tải video từ X trên iPhone với PWA và Phím tắt.",
+  "lang": "vi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
