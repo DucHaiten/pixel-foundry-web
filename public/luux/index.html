@@ -1,100 +1,44 @@
 <!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#08090b">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="Lưu video từ X trên iPhone bằng PWA và Phím tắt.">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Lưu X">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./icon.svg">
-  <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <title>Lưu X</title>
-  <style>
-    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;background:#08090b;color:#f6f7f8}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 20%,#163126 0,#08090b 42%)}.loader{width:min(100%,360px);text-align:center}.mark{width:84px;height:84px;margin:auto;border-radius:24px;display:grid;place-items:center;background:#11151a;border:1px solid #28342e;font-size:30px;font-weight:800}.ring{width:30px;height:30px;margin:26px auto 16px;border:3px solid #25302b;border-top-color:#39d98a;border-radius:50%;animation:spin .8s linear infinite}h1{font-size:24px;margin:0 0 8px}p{margin:0;color:#9da7a1;line-height:1.5;font-size:15px}.error{display:none;padding:18px;border:1px solid #5d3339;border-radius:16px;background:#271418;color:#ffd5da}.error strong{display:block;margin-bottom:8px;color:#fff}@keyframes spin{to{transform:rotate(360deg)}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080a0c">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lưu X">
+<meta name="description" content="Tải video từ X trên iPhone bằng PWA và Phím tắt.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>Lưu X</title>
+<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <main class="loader" id="loader">
-    <div class="mark">X↓</div>
-    <div class="ring"></div>
-    <h1>Đang mở Lưu X</h1>
-    <p>Đang chuẩn bị giao diện trên iPhone.</p>
-  </main>
-  <div class="error" id="error"><strong>Không tải được ứng dụng</strong><span>Kiểm tra kết nối mạng rồi mở lại trang.</span></div>
-  <script>
-    (() => {
-      'use strict';
-      const PARTS = [0,1,2,3].map((n) => `https://raw.githubusercontent.com/DucHaiten/pixel-foundry-web/main/.luux/part-0${n}`);
-      const decoder = new TextDecoder();
-
-      function decodeBase64(value) {
-        const binary = atob(value.replace(/\s+/g, ''));
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-        return bytes;
-      }
-
-      function readText(bytes, start, length) {
-        return decoder.decode(bytes.subarray(start, start + length)).replace(/\0.*$/s, '').trim();
-      }
-
-      function parseTar(bytes) {
-        const files = new Map();
-        let offset = 0;
-        while (offset + 512 <= bytes.length) {
-          const name = readText(bytes, offset, 100);
-          if (!name) break;
-          const sizeText = readText(bytes, offset + 124, 12).replace(/\0/g, '').trim();
-          const size = parseInt(sizeText || '0', 8) || 0;
-          const type = String.fromCharCode(bytes[offset + 156] || 48);
-          const start = offset + 512;
-          if (type !== '5') files.set(name.replace(/^\.\//, ''), bytes.slice(start, start + size));
-          offset = start + Math.ceil(size / 512) * 512;
-        }
-        return files;
-      }
-
-      async function unpack() {
-        const pieces = await Promise.all(PARTS.map(async (url) => {
-          const response = await fetch(url, { cache: 'no-store' });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return response.text();
-        }));
-        const compressed = decodeBase64(pieces.join(''));
-        const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
-        const archive = new Uint8Array(await new Response(stream).arrayBuffer());
-        const files = parseTar(archive);
-        const html = decoder.decode(files.get('index.html') || new Uint8Array());
-        const css = decoder.decode(files.get('styles.css') || new Uint8Array());
-        const js = decoder.decode(files.get('app.js') || new Uint8Array());
-        if (!html || !css || !js) throw new Error('Gói ứng dụng thiếu tệp');
-        return html
-          .replace('<link rel="stylesheet" href="./styles.css">', `<style>${css}</style>`)
-          .replace('<link rel="apple-touch-icon" href="./assets/icon-180.png">', '<link rel="apple-touch-icon" href="./icon.svg">')
-          .replace('<link rel="icon" type="image/png" href="./assets/icon-192.png">', '<link rel="icon" type="image/svg+xml" href="./icon.svg">')
-          .replace('<script src="./app.js" defer></script>', `<script>${js.replace(/<\\/script/gi, '<\\/script')}<\\/script>`);
-      }
-
-      async function start() {
-        try {
-          const html = await unpack();
-          document.open();
-          document.write(html);
-          document.close();
-        } catch (error) {
-          console.error(error);
-          document.getElementById('loader').style.display = 'none';
-          document.getElementById('error').style.display = 'block';
-        }
-      }
-
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
-      start();
-    })();
-  </script>
+<div class="app">
+<header class="top"><div class="logo">X↓</div><div class="brand"><strong>Lưu X</strong><span id="runtime">Ứng dụng web cho iPhone</span></div><button class="iconbtn" id="help">?</button></header>
+<main>
+<section class="screen active" data-screen="download">
+<div class="hero"><div class="eyebrow">TẢI NHANH</div><h1>Lưu video đang xem trên X</h1><p>Dán liên kết hoặc gửi thẳng từ bảng Chia sẻ của X qua Phím tắt.</p></div>
+<div class="card dest" id="destCard"><div class="desticon" id="destIcon">✿</div><div class="destcopy"><small>Nơi lưu Phím tắt đang chọn</small><strong id="destLabel">Ảnh &gt; Lưu X</strong></div><button class="linkbtn" type="button">Đổi</button></div>
+<form class="card field" id="form"><label for="url">Liên kết bài đăng X</label><div class="urlwrap"><textarea id="url" placeholder="https://x.com/.../status/..." autocapitalize="off" autocomplete="off" spellcheck="false"></textarea><button class="paste" id="paste" type="button">Dán</button></div><button class="primary" id="resolve" type="submit">Tìm video</button><div class="msg" id="msg"></div></form>
+<article class="card media" id="media"><div class="poster"><img id="poster" alt="Ảnh xem trước"><span id="count">1 video</span></div><div class="mediabody"><div class="author"><div class="avatar" id="avatar"></div><div><strong id="name">Tài khoản X</strong><span id="handle"></span></div></div><p class="post" id="text"></p><div class="row"><label for="quality">Chất lượng</label><select id="quality"></select></div><button class="primary" id="save" type="button">Mở bảng lưu của iPhone</button><p class="note">Khi dùng trực tiếp trong app, iPhone sẽ mở bảng Chia sẻ để bạn chọn Lưu video hoặc Lưu vào Tệp.</p></div></article>
+<div class="card callout"><div class="big">⌁</div><div><strong>Bỏ bước sao chép liên kết</strong><p>Tạo Phím tắt một lần rồi dùng ngay trong X.</p></div><button class="tinybtn" id="setupNow">Thiết lập</button></div>
+</section>
+<section class="screen" data-screen="setup">
+<div class="hero"><div class="eyebrow">LẦN ĐẦU</div><h1>Thiết lập trên iPhone</h1><p>Làm hai phần dưới đây một lần. Hướng dẫn luôn nằm trong app.</p></div>
+<div class="statusgrid"><div class="status" id="pwaStatus"><small>Màn hình chính</small><strong id="pwaText">Chưa xác nhận</strong></div><div class="status" id="shortcutStatus"><small>Phím tắt</small><strong id="shortcutText">Chưa xác nhận</strong></div></div>
+<article class="card guide"><button class="guidehead" data-guide="pwa"><span class="num">1</span><span><strong>Thêm app vào Màn hình chính</strong><small>Safari, khoảng 20 giây</small></span><span>⌄</span></button><div class="guidebody open" data-body="pwa"><ol class="steps"><li><span>1</span><div><strong>Mở trang này bằng Safari</strong><p>Không mở trong trình duyệt thu nhỏ bên trong ứng dụng khác.</p></div></li><li><span>2</span><div><strong>Chạm nút Chia sẻ của Safari</strong><p>Nút hình vuông có mũi tên hướng lên.</p></div></li><li><span>3</span><div><strong>Chọn Thêm vào Màn hình chính</strong><p>Bật Mở dưới dạng ứng dụng rồi chạm Thêm.</p></div></li></ol><button class="secondary" id="pwaDone">Tôi đã thêm xong</button></div></article>
+<article class="card guide"><button class="guidehead" data-guide="shortcut"><span class="num">2</span><span><strong>Tạo Phím tắt Lưu X</strong><small>Dùng ngay trong bảng Chia sẻ của X</small></span><span>⌄</span></button><div class="guidebody" data-body="shortcut"><div class="switch"><button class="active" data-mode="bridge">Mở app tự động</button><button data-mode="direct">Lưu thẳng</button></div><div class="mode active" data-panel="bridge"><ol class="steps"><li><span>1</span><div><strong>Mở Phím tắt, tạo phím tắt mới</strong><p>Đặt tên Lưu X.</p></div></li><li><span>2</span><div><strong>Mở phần Chi tiết</strong><p>Bật Hiển thị trong Bảng chia sẻ. Chỉ nhận URL.</p></div></li><li><span>3</span><div><strong>Thêm tác vụ Mã hóa URL</strong><p>Đầu vào là Đầu vào Phím tắt.</p></div></li><li><span>4</span><div><strong>Thêm tác vụ Văn bản</strong><p>Dán địa chỉ bên dưới, rồi chèn biến đã mã hóa ngay cuối dòng.</p></div></li><li><span>5</span><div><strong>Thêm tác vụ Mở URL</strong><p>Dùng khối Văn bản làm đầu vào rồi chạm Xong.</p></div></li></ol><div class="copybox"><span id="shortcutUrl"></span><button id="copyUrl">Sao chép địa chỉ</button></div></div><div class="mode" data-panel="direct"><ol class="steps"><li><span>1</span><div><strong>Tạo Phím tắt nhận URL từ Bảng chia sẻ</strong><p>Đặt tên Lưu X.</p></div></li><li><span>2</span><div><strong>Thay x.com thành d.fxtwitter.com</strong><p>Thêm tác vụ Thay thế văn bản.</p></div></li><li><span>3</span><div><strong>Thay twitter.com thành d.fxtwitter.com</strong><p>Thêm tác vụ Thay thế văn bản lần hai.</p></div></li><li><span>4</span><div><strong>Thêm Lấy nội dung của URL</strong><p>Đầu vào là kết quả thay thế.</p></div></li><li><span>5</span><div><strong>Thêm Chọn từ menu</strong><p>Tạo hai mục: Ảnh và Tệp.</p></div></li><li><span>6</span><div><strong>Trong nhánh Ảnh</strong><p>Thêm Lưu vào Album ảnh và chọn album. Lần sau Phím tắt giữ nguyên album này.</p></div></li><li><span>7</span><div><strong>Trong nhánh Tệp</strong><p>Thêm Lưu tệp, tắt Hỏi nơi lưu và chọn thư mục. Lần sau giữ nguyên thư mục này.</p></div></li></ol></div><button class="secondary" id="shortcutDone">Tôi đã tạo xong</button></div></article>
+<article class="card guide"><button class="guidehead" data-guide="use"><span class="num">3</span><span><strong>Cách dùng hằng ngày</strong><small>Không cần sao chép và dán</small></span><span>⌄</span></button><div class="guidebody" data-body="use"><ol class="steps"><li><span>1</span><div><strong>Mở bài đăng video trong X</strong><p>Chạm biểu tượng Chia sẻ.</p></div></li><li><span>2</span><div><strong>Chọn Lưu X</strong><p>Phím tắt nhận đúng liên kết đang xem.</p></div></li><li><span>3</span><div><strong>Lưu video</strong><p>Bản mở app sẽ tự tìm video. Bản lưu thẳng sẽ dùng album hoặc thư mục đã đặt.</p></div></li></ol></div></article>
+</section>
+<section class="screen" data-screen="settings"><div class="hero"><div class="eyebrow">CÀI ĐẶT</div><h1>Nơi lưu mặc định</h1><p>Thông tin này giúp bạn nhìn rõ cấu hình đang dùng trong Phím tắt.</p></div><div class="seg"><button class="active" data-dest="photos">✿<br><strong>Ảnh</strong></button><button data-dest="files">▰<br><strong>Tệp</strong></button></div><div class="card setting"><label for="album">Tên album Ảnh</label><input id="album" value="Lưu X"><p class="note">Chọn cùng album trong tác vụ Lưu vào Album ảnh.</p></div><div class="card setting"><label for="folder">Thư mục Tệp</label><input id="folder" value="iCloud Drive/Shortcuts/Lưu X"><p class="note">Chọn cùng thư mục trong tác vụ Lưu tệp.</p></div><div class="card setting"><label for="defaultQuality">Chất lượng mặc định</label><select id="defaultQuality"><option value="best">Cao nhất</option><option value="balanced">Cân bằng</option><option value="small">Nhẹ nhất</option></select></div><button class="primary" id="saveSettings">Ghi nhớ cài đặt</button><div class="msg" id="settingsMsg"></div></section>
+</main>
+</div>
+<nav class="bottom"><button class="nav active" data-target="download"><span>↓</span><small>Tải</small></button><button class="nav" data-target="setup"><span>⌁</span><small>Thiết lập</small></button><button class="nav" data-target="settings"><span>⚙</span><small>Cài đặt</small></button></nav>
+<div class="modal" id="modal"><div class="sheet"><div class="art">X↓</div><h2>Thiết lập một lần, dùng ngay trong X</h2><p>Thêm app vào Màn hình chính, sau đó tạo Phím tắt theo hướng dẫn trong app. Không cần Mac, Xcode hay tài khoản Developer.</p><div class="sheetactions"><button class="secondary" id="closeIntro">Để sau</button><button class="primary" id="openGuide">Mở hướng dẫn</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script src="./app.js" defer></script>
 </body>
 </html>
