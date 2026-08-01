@@ -1,19 +1,25 @@
 {
-  "name": "Lưu X",
-  "short_name": "Lưu X",
-  "description": "Tải video từ X trên iPhone với PWA và Phím tắt.",
+  "name": "Lướt X",
+  "short_name": "Lướt X",
+  "description": "Lướt video công khai từ X, đề xuất theo sở thích và lưu xem offline ngay trong app.",
   "lang": "vi",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#08090b",
-  "theme_color": "#08090b",
+  "background_color": "#050608",
+  "theme_color": "#050608",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
